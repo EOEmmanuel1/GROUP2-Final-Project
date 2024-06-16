@@ -11,6 +11,7 @@ const generateToken = (user) => {
 
 export const register = async (req, res) => {
     const { email, username, password, role, gender } = req.body;
+    console.log("string")
 
     try {
         let user = null;
@@ -27,7 +28,7 @@ export const register = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(password, salt);
 
-        if (!user && role === 'patient') {
+        if (role === 'patient') {
             user = new User({
                 username,
                 email,
@@ -35,7 +36,7 @@ export const register = async (req, res) => {
                 gender,
                 role
             });
-        } else if (!user && role === 'doctor') {
+        } else if (role === 'doctor') {
             user = new Doctor({
                 username,
                 email,
@@ -46,30 +47,26 @@ export const register = async (req, res) => {
         }
 
         await user.save();
-        res.status(200).json({ success: true, message: 'User successfully created' });
+        res.status(200).json({ success: true, message: 'User successfully created'});
 
     } catch (error) {
+        console.error(error); // Log the error for debugging
         res.status(500).json({ success: false, message: 'Internal server error, Try again' });
     }
 };
 
 export const login = async (req, res) => {
+    // Destructure email and password from req.body
     const { email, password } = req.body;
-    try {
-        let user = null;
-        const patient = await User.findOne({ email, password });
-        const doctor = await Doctor.findOne({ email, password });
-        if (patient) {
-            user = patient;
-        }
-        if (doctor) {
-            user = doctor;
-        }
 
-        if (!user) {
+    try {
+        let user = await User.findOne({ email }) || await Doctor.findOne({ email });
+
+      if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Compare the password provided in the request with the hashed password in the database
         const isPasswordMatch = await bcrypt.compare(password, user.password);
         if (!isPasswordMatch) {
             return res.status(400).json({ status: false, message: 'Invalid credentials' });
@@ -77,9 +74,11 @@ export const login = async (req, res) => {
 
         const token = generateToken(user);
 
-        const { password, ...rest } = user._doc;
+        // Destructure user to exclude sensitive data like password
+        const { password: userPassword, ...rest } = user._doc;
         res.status(200).json({ status: true, token, user: rest });
     } catch (error) {
+        console.error("Login error:", error);
         res.status(500).json({ status: false, message: "Failed to login" });
     }
 };

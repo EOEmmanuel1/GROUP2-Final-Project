@@ -1,29 +1,32 @@
 import mongoose from 'mongoose';
 
+const TimeSlotSchema = new mongoose.Schema({
+  startTime: { type: String, required: true }, // e.g., "09:00:00.000"
+  endTime: { type: String, required: true } // e.g., "10:00:00.000"
+});
+
 const DoctorSchema = new mongoose.Schema({
   username: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  phone: { type: Number },
+  phone: { type: String },
   role: { type: String, enum: ["doctor"], required: true },
-
   specialization: { type: String },
   qualifications: [{ type: String }],
   experiences: [{ type: String }],
   bio: { type: String, maxLength: 50 },
-
-  timeSlots: [{ type: String }], // Assuming timeSlots are stored as strings, adjust if needed
+  about: { type: String },
+  timeSlots: [TimeSlotSchema], // Using the TimeSlotSchema here
   rating: {
     type: Number,
     default: 0,
   },
   isApproved: {
     type: String,
-    enum: ["pending", "approved", "cancelled"],
+    enum: ["pending", "approved", "rejected"],
     default: "pending",
-  },
-  appointments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Appointment" }]
-},{ timestamps: true }); // Adds createdAt and updatedAt fields
+  }
+}, { timestamps: true });
 
 const Doctor = mongoose.model('Doctor', DoctorSchema);
 export default Doctor;
